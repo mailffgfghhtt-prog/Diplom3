@@ -1,6 +1,7 @@
 package com.education_services.stellarburgers;
 
 import io.restassured.response.Response;
+import io.qameta.allure.Step;
 import org.aeonbits.owner.ConfigFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +23,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.education_services.stellarburgers.WebDriverCreator.createWebDriver;
 
-public class AccountProfileTests {
+class AccountProfileTests {
     private static final AppConfig appConfig = ConfigFactory.create(AppConfig.class);
     private static final String LOGIN_URL = appConfig.baseUrl() + "login";
     private WebDriver driver;
@@ -34,7 +35,7 @@ public class AccountProfileTests {
     private AccountProfilePage accountProfilePage;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         driver = createWebDriver();
         stepsAPI = new StepsAPI();
         user = UserGenerator.randomUser();
@@ -50,7 +51,7 @@ public class AccountProfileTests {
     @ParameterizedTest
     @MethodSource("placeForConstructorTransitionData")
     @DisplayName("страница личного кабинета, с этой страницы можно перейти на страницу конструктора")
-    public void openMainPageFromPersonalCabinetTest(By placeForConstructorTransition) {
+    void openMainPageFromPersonalCabinetTest(By placeForConstructorTransition) {
         driver.get(LOGIN_URL);
         loginPage.inputEmail(user.getEmail());
         loginPage.inputPassword(user.getPassword());
@@ -59,9 +60,8 @@ public class AccountProfileTests {
 
         mainPage.clickHrefPersonalCabinet();
 
-        // Используем методы страницы, а не прямые поля
-        if (placeForConstructorTransition.equals(accountProfilePage.hrefConstructor)) {
-            accountProfilePage.clickHrefConstructor();  // Вызываем метод, а не поле
+        if (placeForConstructorTransition.toString().contains("Конструктор")) {
+            accountProfilePage.clickHrefConstructor();
         } else {
             accountProfilePage.clickHrefSiteLogo();
         }
@@ -72,15 +72,14 @@ public class AccountProfileTests {
 
     static Stream<Arguments> placeForConstructorTransitionData() {
         return Stream.of(
-                Arguments.of(By.xpath(".//p[text()='Конструктор']/parent::a")),  // Передаем локатор напрямую
+                Arguments.of(By.xpath(".//p[text()='Конструктор']/parent::a")),
                 Arguments.of(By.xpath(".//div[starts-with(@class, 'AppHeader_header__logo')]/a"))
         );
     }
 
-
     @Test
     @DisplayName("Страница личного кабинета, можно из него выйти")
-    public void exitFromPersonalCabinetTest() {
+    void exitFromPersonalCabinetTest() {
         driver.get(LOGIN_URL);
         loginPage.inputEmail(user.getEmail());
         loginPage.inputPassword(user.getPassword());
@@ -96,10 +95,21 @@ public class AccountProfileTests {
     }
 
     @AfterEach
-    public void tearDown() {
-        driver.quit();
-        if (token != null) {
-            stepsAPI.sendDeleteRequestAuthUser(token);
+    void tearDown() {
+        try {
+            if (driver != null) {
+                driver.quit();
+            }
+        } catch (Exception e) {
+            System.err.println("Ошибка при закрытии драйвера: " + e.getMessage());
+        }
+
+        try {
+            if (token != null) {
+                stepsAPI.sendDeleteRequestAuthUser(token);
+            }
+        } catch (Exception e) {
+            System.err.println("Ошибка при удалении пользователя через API: " + e.getMessage());
         }
     }
 }
